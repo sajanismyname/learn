@@ -1,13 +1,9 @@
-import { useState } from 'react'
 import {Routes, Route, Link} from "react-router-dom"
 import Dashboard from './components/Dashboard'
 import ProductDetails from './components/ProductDetails'
 import ProductForm from './components/ProductForm'
 import ProductList from './components/ProductList'
 
-
-
-import './App.css'
 
 function App() {
     return (
@@ -22,8 +18,10 @@ function App() {
 
             <Route path="/" element={<Dashboard/>}></Route>
             <Route path="/products" element={<ProductList/>}></Route>
-            <Route path="/products/add" element={<ProductForm/>}></Route>
-            <Route path="/products/:id/edit" element={<ProductForm/>}></Route>
+            <Route path="/products/add" element={<ProductForm mode="add"/>}></Route>
+            <Route path="/products/:id/edit" element={<ProductForm mode="edit"/>}></Route>
+            <Route path="/products/:id" element={<ProductDetails/>}></Route>
+            
         </Routes>
         </div>
     )
