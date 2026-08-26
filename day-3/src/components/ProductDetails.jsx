@@ -1,38 +1,32 @@
-import { useState, useEffect } from "react";
-import { Link, useParams } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { useParams } from "react-router-dom";
+import { getProduct } from "../api/productApi.js";
 
 function ProductDetails() {
-    const { id } = useParams();
-    const [product, setProduct] = useState("");
-    const [loading, setLoading] = useState(true)
-    const [error, setError] = useState(null)
+        const { id } = useParams();
+        const [product, setProduct] = useState(null);
+        const [error, setError] = useState(null);
 
-    useEffect(() => {
-        fetch(`http://localhost:/5000/api/products/${id}`)
-            .then((res) => {
-                if (!res.ok) throw new error("Failed to load products")
-                return res.json()
-            })
-            .then((data) => setProduct(data))
-            .catch((err) => setError(err.message))
-            .finally(() => setLoading(false))
-    }, [id])
+        useEffect(() => {
+            getProduct(id)
+                .then((data) => {
+            console.log("RAW product data:", data);
+            setProduct(data);
+        })
+                .catch((err) => setError(err.response?.data?.message || err.message));
+        }, [id]);
 
-    if (loading) return <p>Loading product...</p>;
-    if (error) return <p>Error: {error}</p>;
+        if (error) return <p>Error: {error}</p>;
+        if (!product) return <p>Loading...</p>;
 
-    return(
-        <div>
-            <h2>{product.name}</h2>
-            <p>Price: ${product.price}</p>
-            <p>Stock: {product.stock}</p>
+        return (
+            <div>
+                <h2>{product.name}</h2>
+                <p>{product.description}</p>
+                <p>Price: {product.price}</p>
+                <p>Stock: {product.stock}</p>
+            </div>
+        );
+    }
 
-            <Link to={`/products/${id}/edit`}>Edit</Link>
-            {"|"}
-            <Link to="/products">Back to Product</Link>
-        </div>
-    )
-
-}
-
-export default ProductDetails
+export default ProductDetails;

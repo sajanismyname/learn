@@ -1,26 +1,22 @@
 import { useState, useEffect} from "react";
 import { Link } from "react-router-dom";
+import { getProducts } from "../api/productApi";
 
 function Dashboard(){
     const[products, setProducts]=useState([]);
-    const[loading, setLoading]=useState(true);
     const[error, setError]=useState(null);
 
-    useEffect(()=>{
-        fetch("http://localhost:5000/api/products")
-        .then((res)=>{
-            if(!res.ok) throw new Error ("Failed to load products")
-                return res.json()
-        })
-        .then((data)=>setProducts(data))
-        .catch((err)=>setError(err.message))
-        .finally(()=>setLoading(false))
-    },[])
+    useEffect(() => {
+    getProducts()
+        .then(setProducts)
+        .catch((err) => setError(err.message));
+}, []);
 
-    if(loading) return <p>Dashboard loading....</p>
+    if(!products) return <p>Dashboard loading....</p>
     if(error) return <p>Error: {error}</p>
 
     const totalProducts = products.length;
+    console.log("products:", products);
     const outOfStock = products.filter((p)=>p.stock === 0).length;
 
     return(

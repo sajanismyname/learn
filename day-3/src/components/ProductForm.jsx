@@ -1,88 +1,88 @@
-import { useState, useEffect } from "react"
-import { useNavigate, useParams } from "react-router-dom"
-
-function ProductForm({mode}){
-    const [name, setName]=useState("")
-    const [price, setPrice]=useState("")
-    const [stock, setStock]=useState("")
-    const [loading, setLoading]=useState(true)
-    const [error, setError]=useState(null)
-
-    const navigate=useNavigate();
-    const {id}=useParams()
-
-    useEffect(()=>{
-        if(mode !== "edit") return;
-
-        fetch(`http://localhost:/5000/api/products/:${id}`)
-            .then((res)=>{
-                if(!res.ok) throw new error("Failed to load products");
-            })
-            .then((data)=>{
-                setName(data.name);
-                setPrice(data.price);
-                setStock(data.stock);
-            })
-            .catch((err)=>setError(err.message))
-            .finally(()=>setLoading(false))
-    },[mode,id])
+import { useEffect, useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
+import { createProduct, getProduct, updateProduct } from "../api/productApi.js";
+import { productSchema } from "../validation/productSchema.js";
+import { ValidationError } from "yup";
 
 
-    function handleSubmit(event){
-        event.preventDefault();
+function ProductForm({ mode }) {
+    const { id } = useParams();
+    const navigate = useNavigate();
+    const [form, setForm] = useState({
+        name: "", price: "", description: "", category: "", stock: "", image: "",
+    });
+    const [error, setError] = useState(null);
 
-        if(name.trim() === "" || price === "") return;
+    useEffect(() => {
+        if (mode === "edit" && id) {
+            getProduct(id).then(setForm).catch((err) => setError(err.message));
+        }
+    }, [mode, id]);
 
-        const productData={name, price:Number(price), stock:Number(stock)}
+    const handleChange = (e) => {
+        setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+    };
 
-        const url= mode === "edit" ? `http://localhost:5000/api/products/${id}` : "http://localhost:5000/api/products";
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        setError(null);
+        try {
+            const payload = { ...form, price: Number(form.price), stock: Number(form.stock) };
+        
+            await productSchema.validate(payload, {abortEarly:false})
 
-        const method = mode === "edit" ? "PUT" : "POST";
+            if (mode === "add") {
+                await createProduct(payload);
+            } else {
+                await updateProduct(id, payload);
+            }
+            navigate("/products");
+        } catch (err) {
+            if(err.name === "ValidationError"){
+                setError(err.errors.join(", "));
+            }else{
+                setError(err.response?.data?.message || err.message);
+            }
+        }
+    };
 
-        fetch(url, {
-            method,
-            headers:{"Content-type" : "application/json"},
-            body:JSON.stringify(productData)
-        })
-        .then(()=>{
-            if(!res.ok) throw new error("Failed to save product")
-                navigate("/products")
-        })
-        .catch((err)=>setError(err.message))
-    }
-
-    if(loading) return <p>Loading... </p>
-    if(error) return <p>Error: {error}</p>
-
-    return(
-        <div>
-            <h2> {mode==="edit" ? "Edit Product" : "Add Product"} </h2>
+    return (
+        <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "10px", maxWidth: "300px" }}>
             {error && <p style={{ color: "red" }}>{error}</p>}
-            <form onSubmit={handleSubmit}>
-                    <input 
-                        type="text"
-                        placeholder="product name"
-                        value={name}
-                        onChange={(e)=>setName(e.target.value)}
-                    />
-                    <input 
-                        type="text"
-                        placeholder="price"
-                        value={price}
-                        onChange={(e)=>setPrice(e.target.value)}
-                    />
-                    <input 
-                        type="text"
-                        placeholder="stock"
-                        value={stock}
-                        onChange={(e)=>setStock(e.target.value)}
-                    />
-                    
-                <button type="submit">{mode==="edit" ? "Save Changes" : "Add Product"}</button>
-            </form>
-        </div>
-    )
-    
+
+            <label>
+                Name:
+                <input name="name" value={form.name} onChange={handleChange} />
+            </label>
+
+            <label>
+                Price:
+                <input name="price" value={form.price} onChange={handleChange} />
+            </label>
+
+            <label>
+                Description:
+                <input name="description" value={form.description} onChange={handleChange} />
+            </label>
+
+            <label>
+                Category:
+                <input name="category" value={form.category} onChange={handleChange} />
+            </label>
+
+            <label>
+                Stock:
+                <input name="stock" value={form.stock} onChange={handleChange} />
+            </label>
+
+            <label>
+                Image URL:
+                <input name="image" value={form.image} onChange={handleChange} />
+            </label>
+
+            <button type="submit">{mode === "add" ? "Add Product" : "Save Changes"}</button>
+        </form>
+    );
 }
 
-export default ProductForm
+export default ProductForm;
